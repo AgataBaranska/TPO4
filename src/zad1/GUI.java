@@ -27,7 +27,6 @@ public class GUI {
 			public void newMessageReceived(String message) {
 				chatBox.append("<" + idChat + ">:  " + message + "\n");
 				messageBox.setText("");
-				
 			}
 		});
 			

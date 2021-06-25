@@ -45,6 +45,16 @@ public class JMSChat {
 		}
 	}
 
+	private List<ChatListener> listeners = new ArrayList<ChatListener>();
+
+	public void addListener(ChatListener toAdd) {
+		listeners.add(toAdd);
+	}
+
+	public void onNewMessage(String message) {
+		for (ChatListener l : listeners)
+			l.newMessageReceived(message);
+	}
 	private static void close() {
 		if (connection != null) {
 			try {
@@ -117,15 +127,6 @@ public class JMSChat {
 		return idChat;
 	}
 
-	private List<ChatListener> listeners = new ArrayList<ChatListener>();
 
-	public void addListener(ChatListener toAdd) {
-		listeners.add(toAdd);
-	}
-
-	public void onNewMessage(String message) {
-		for (ChatListener l : listeners)
-			l.newMessageReceived(message);
-	}
 
 }
