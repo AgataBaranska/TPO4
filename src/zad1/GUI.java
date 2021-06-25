@@ -11,33 +11,42 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 public class GUI {
-	private JMSChat jmschat;
+	private JMSChat jmsChat;
 	private String idChat;
 
-	private  JFrame mainFrame = new JFrame(idChat);
+	private JFrame mainFrame;
 	private JTextArea chatBox;// all chat messages, not editable
 	private JTextField messageBox;// write message box, editable
 	private JButton btnSend;// btn to send messages
 
-	public GUI(String idChat) {
-		this.idChat = idChat;
-		this.jmschat = new JMSChat(idChat);
+	public GUI(JMSChat jmsChat) {
+		displayGUI();
+		this.jmsChat = jmsChat;
+		jmsChat.addListener(new ChatListener() {
+			@Override
+			public void newMessageReceived(String message) {
+				chatBox.append("<" + idChat + ">:  " + message + "\n");
+				messageBox.setText("");
+				
+			}
+		});
+			
 	}
-	
-	public void display() {
 
+	public void displayGUI() {
+		mainFrame = new JFrame(jmsChat.getChatId());
 		chatBox = new JTextArea();
 		chatBox.setEditable(false);
 		JPanel panel = new JPanel();
 		panel.add(chatBox);
-		
+
 		messageBox = new JTextField(30);
 		btnSend = new JButton("Send Message");
 		btnSend.addActionListener(new sendMessageButtonListener());
 		mainFrame.add(panel, BorderLayout.NORTH);
 		mainFrame.add(btnSend, BorderLayout.SOUTH);
-		mainFrame.add(messageBox,BorderLayout.CENTER);
-		//chatBox.setLineWrap(true);
+		mainFrame.add(messageBox, BorderLayout.CENTER);
+		// chatBox.setLineWrap(true);
 		mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		mainFrame.setSize(300, 300);
 		mainFrame.setVisible(true);
