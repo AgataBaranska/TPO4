@@ -9,6 +9,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 public class GUI {
 	private JMSChat jmsChat;
@@ -20,16 +21,22 @@ public class GUI {
 	private JButton btnSend;// btn to send messages
 
 	public GUI(JMSChat jmsChat) {
-		displayGUI();
+
 		this.jmsChat = jmsChat;
 		jmsChat.addListener(new ChatListener() {
 			@Override
 			public void newMessageReceived(String message) {
-				chatBox.append("<" + idChat + ">:  " + message + "\n");
-				messageBox.setText("");
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						chatBox.append("<" + idChat + ">:  " + message + "\n");
+						messageBox.setText("");
+					}
+				});
 			}
 		});
-			
+		displayGUI();
+
 	}
 
 	public void displayGUI() {

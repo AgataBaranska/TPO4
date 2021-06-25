@@ -32,7 +32,8 @@ public class JMSChat {
 	private static TopicPublisher publisher;
 	private static Topic topic;
 	private static BufferedReader bf;
-
+	private List<ChatListener> listeners = new ArrayList<ChatListener>();
+	
 	public JMSChat(String idChat) {
 		this.idChat = idChat;
 		System.out.println("Chat" + idChat + "\n");
@@ -44,9 +45,7 @@ public class JMSChat {
 			close();
 		}
 	}
-
-	private List<ChatListener> listeners = new ArrayList<ChatListener>();
-
+	
 	public void addListener(ChatListener toAdd) {
 		listeners.add(toAdd);
 	}
