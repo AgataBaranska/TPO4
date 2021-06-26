@@ -22,27 +22,27 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-public class JMSChat {
+public class JMSChat implements MessageListener {
 
-	private static String idChat = "Anonim";
+	private  String idChat = "Anonim";
 
-	private static TopicConnectionFactory connectionFactory;
-	private static TopicConnection connection;
-	private static TopicSession session;
-	private static TopicPublisher publisher;
-	private static Topic topic;
-	private static BufferedReader bf;
+	private  TopicConnectionFactory connectionFactory;
+	private  TopicConnection connection;
+	private  TopicSession session;
+	private  TopicPublisher publisher;
+	private TopicSubscriber subscriber;
+	private  Topic topic;
+	private  BufferedReader bf;
 	private List<ChatListener> listeners = new ArrayList<ChatListener>();
 	
 	public JMSChat(String idChat) {
 		this.idChat = idChat;
-		System.out.println("Chat" + idChat + "\n");
+		System.out.println("Chat " + idChat + "\n");
 		try {
-			runJMSChat(init());
-		} catch (NamingException | JMSException | IOException | InterruptedException e) {
+			init();
+			start();
+		} catch (NamingException | JMSException e) {
 			e.printStackTrace();
-		} finally {
-			close();
 		}
 	}
 	
@@ -50,11 +50,11 @@ public class JMSChat {
 		listeners.add(toAdd);
 	}
 
-	public void onNewMessage(String message) {
+	protected void onNewMessage(String id, String message) {
 		for (ChatListener l : listeners)
-			l.newMessageReceived(message);
+			l.newMessageReceived(id, message);
 	}
-	private static void close() {
+	private void close() {
 		if (connection != null) {
 			try {
 				connection.close();
@@ -71,54 +71,36 @@ public class JMSChat {
 		}
 	}
 
-	private static void runJMSChat(TopicSubscriber subscriber) throws JMSException, IOException, InterruptedException {
-		String msg = "";
+	private void start() throws JMSException {
 		connection.start();
-
-		do {
-			if (!msg.isEmpty()) {
-				sendMessage(publisher, session, idChat, msg);
-			}
-			Thread.sleep(100);
-			getMessage(subscriber, idChat);
-		} while (!"bye".equals(msg = bf.readLine()));
-		System.out.println("Koniec chatu");
-		connection.close();
-		System.exit(0);
 	}
 
-	private static TopicSubscriber init() throws NamingException, JMSException {
+	private void init() throws NamingException, JMSException {
 		Hashtable<String, String> properties = new Hashtable<>();
 		properties.put(Context.INITIAL_CONTEXT_FACTORY, "org.exolab.jms.jndi.InitialContextFactory");
 		properties.put(Context.PROVIDER_URL, "tcp://localhost:3035/");
 
 		Context ctx = new InitialContext(properties);
+
+
 		connectionFactory = (TopicConnectionFactory) ctx.lookup("ConnectionFactory");
 		connection = connectionFactory.createTopicConnection();
 		session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
 		topic = (Topic) ctx.lookup("topic1");
 		publisher = session.createPublisher(topic);
+
+
 		TopicSubscriber subscriber = session.createSubscriber(topic);
 		bf = new BufferedReader(new InputStreamReader(System.in));
-		return subscriber;
+
+		subscriber.setMessageListener(this);
+		this.subscriber = subscriber;
 	}
 
-	private static void getMessage(TopicSubscriber subscriber, String idChat) throws JMSException {
-		subscriber.setMessageListener(new MessageListener() {
-			@Override
-			public void onMessage(Message arg0) {
-
-				TextMessage msg = (TextMessage) arg0;
-
-				System.out.println(idChat + " odbiera " + msg);
-
-			}
-		});
-	}
-
-	private static void sendMessage(TopicPublisher publisher, TopicSession session, String id, String msg2)
-			throws IOException, JMSException {
-		publisher.publish(session.createTextMessage("\n" + id + " pisze: " + msg2));
+	public void sendMessage(String msg) throws JMSException {
+		TextMessage message = session.createTextMessage(msg);
+		message.setStringProperty("userId", getChatId());
+		publisher.publish(message);
 
 	}
 
@@ -127,5 +109,15 @@ public class JMSChat {
 	}
 
 
-
+	@Override
+	public void onMessage(Message message) {
+		try {
+			TextMessage msg = (TextMessage) message;
+			System.out.println(idChat + " odbiera " + msg);
+			String userId = message.getStringProperty("userId");
+			onNewMessage(userId, msg.getText());
+		} catch (JMSException e) {
+			e.printStackTrace();
+		}
+	}
 }

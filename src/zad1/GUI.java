@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import javax.jms.JMSException;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -25,18 +26,19 @@ public class GUI {
 		this.jmsChat = jmsChat;
 		jmsChat.addListener(new ChatListener() {
 			@Override
-			public void newMessageReceived(String message) {
+			public void newMessageReceived(String id, String message) {
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override
 					public void run() {
-						chatBox.append("<" + idChat + ">:  " + message + "\n");
-						messageBox.setText("");
+						SwingUtilities.invokeLater(() -> {
+							chatBox.append("<" + id + ">:  " + message + "\n");
+							messageBox.setText("");
+						});
 					}
 				});
 			}
 		});
 		displayGUI();
-
 	}
 
 	public void displayGUI() {
@@ -60,14 +62,20 @@ public class GUI {
 
 	class sendMessageButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent event) {
-			if (messageBox.getText().length() < 1) {
+			String msg  = messageBox.getText().trim();
+			if (msg.length() < 1) {
 				// do nothing
-			} else if (messageBox.getText().equals(".clear")) {
+			} else if (msg.equals(".clear")) {
 				chatBox.setText("Cleared all messages\n");
 				messageBox.setText("");
 			} else {
-				chatBox.append("<" + idChat + ">:  " + messageBox.getText() + "\n");
-				messageBox.setText("");
+				try {
+					jmsChat.sendMessage(msg);
+					//chatBox.append("<" + jmsChat.getChatId() + ">:  " + messageBox.getText() + "\n");
+					messageBox.setText("");
+				}catch (JMSException e){
+					e.printStackTrace();
+				}
 			}
 		}
 	}
